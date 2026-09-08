@@ -32,11 +32,17 @@ async function request<T>(
     },
   });
 
-  if (!res.ok) {
+ if (!res.ok) {
     let message = `Request failed with status ${res.status}`;
     try {
       const errorBody = await res.json();
-      message = errorBody.message ?? message;
+      if (errorBody.message) {
+        message = errorBody.message;
+      } else if (errorBody.errors) {
+        // ASP.NET Core ValidationProblemDetails shape: { errors: { Field: ["msg"] } }
+        const firstError = Object.values(errorBody.errors)[0];
+        message = Array.isArray(firstError) ? firstError[0] : message;
+      }
     } catch {
       // response wasn't JSON — keep the generic message
     }
@@ -49,7 +55,6 @@ async function request<T>(
 
   return res.json();
 }
-
 // ---- Colleges ----
 export function getColleges(): Promise<College[]> {
   return request<College[]>("/colleges");

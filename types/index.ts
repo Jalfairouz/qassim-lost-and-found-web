@@ -13,6 +13,7 @@ export interface Post {
   contactNumber: string;
   createdAt: string;
   collegeName: string;
+  collegeId: number;
   userId: string;
 }
 
