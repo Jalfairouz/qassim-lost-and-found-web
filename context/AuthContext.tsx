@@ -1,0 +1,70 @@
+"use client";
+
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import {
+  saveToken,
+  getToken,
+  clearToken,
+  decodeToken,
+  isTokenExpired,
+  DecodedToken,
+} from "@/lib/auth";
+
+interface AuthContextValue {
+  token: string | null;
+  user: DecodedToken | null;
+  isAdmin: boolean;
+  login: (token: string) => void;
+  logout: () => void;
+  loading: boolean;
+}
+
+const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [token, setToken] = useState<string | null>(null);
+  const [user, setUser] = useState<DecodedToken | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const stored = getToken();
+    if (stored) {
+      const decoded = decodeToken(stored);
+      if (decoded && !isTokenExpired(decoded)) {
+        setToken(stored);
+        setUser(decoded);
+      } else {
+        clearToken();
+      }
+    }
+    setLoading(false);
+  }, []);
+
+  function login(newToken: string) {
+    saveToken(newToken);
+    const decoded = decodeToken(newToken);
+    setToken(newToken);
+    setUser(decoded);
+  }
+
+  function logout() {
+    clearToken();
+    setToken(null);
+    setUser(null);
+  }
+
+  const roles = user?.role;
+  const isAdmin = Array.isArray(roles) ? roles.includes("Admin") : roles === "Admin";
+
+  return (
+    <AuthContext.Provider value={{ token, user, isAdmin, login, logout, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
+}
