@@ -1,4 +1,5 @@
 "use client";
+import { getRoles } from "@/lib/auth";
 
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import {
@@ -52,9 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null);
     setUser(null);
   }
-
-  const roles = user?.role;
-  const isAdmin = Array.isArray(roles) ? roles.includes("Admin") : roles === "Admin";
+const isAdmin = user ? getRoles(user).includes("Admin") : false;
 
   return (
     <AuthContext.Provider value={{ token, user, isAdmin, login, logout, loading }}>

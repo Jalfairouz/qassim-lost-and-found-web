@@ -1,10 +1,11 @@
 const TOKEN_KEY = "qlf_token";
+const ROLE_CLAIM = "http://schemas.microsoft.com/ws/2008/06/identity/claims/role";
 
 export interface DecodedToken {
   sub: string;
   email: string;
-  role?: string | string[];
   exp: number;
+  [key: string]: unknown; // allows reading the long URI-keyed claim below
 }
 
 export function saveToken(token: string): void {
@@ -31,4 +32,10 @@ export function decodeToken(token: string): DecodedToken | null {
 
 export function isTokenExpired(decoded: DecodedToken): boolean {
   return decoded.exp * 1000 < Date.now();
+}
+
+export function getRoles(decoded: DecodedToken): string[] {
+  const raw = decoded[ROLE_CLAIM] ?? decoded.role;
+  if (!raw) return [];
+  return Array.isArray(raw) ? (raw as string[]) : [raw as string];
 }
