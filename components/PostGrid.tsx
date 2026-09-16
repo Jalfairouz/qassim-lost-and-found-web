@@ -1,12 +1,20 @@
+"use client";
+import EmptyState from "@/components/EmptyState";
+import { useI18n } from "@/context/LocaleContext";
 import { Post } from "@/types";
+import { Search } from "lucide-react";
 import PostCard from "./PostCard";
 
 export default function PostGrid({ posts }: { posts: Post[] }) {
+  const { t } = useI18n();
+
   if (posts.length === 0) {
     return (
-      <p className="text-gray-500 text-center py-12">
-        No posts found.
-      </p>
+      <EmptyState
+        icon={Search}
+        title={t("empty.title")}
+        description={t("empty.description")}
+      />
     );
   }
 

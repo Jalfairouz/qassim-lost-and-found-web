@@ -1,7 +1,17 @@
+"use client";
+import { useI18n } from "@/context/LocaleContext";
 export default function Spinner() {
+  const { t } = useI18n();
   return (
-    <div className="flex justify-center py-12">
-      <div className="w-6 h-6 border-2 border-gray-200 border-t-[#1d4ed8] rounded-full animate-spin" />
+    <div
+      role="status"
+      aria-label={t("common.loading")}
+      className="flex justify-center py-12"
+    >
+      <div
+        aria-hidden
+        className="size-6 rounded-full border-2 border-border border-t-primary animate-spin"
+      />
     </div>
   );
 }

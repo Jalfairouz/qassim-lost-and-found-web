@@ -25,7 +25,7 @@ export interface CreatePostInput {
   contactNumber: string;
 }
 
-export interface UpdatePostInput extends CreatePostInput {}
+export type UpdatePostInput = CreatePostInput;
 
 export interface PostFilters {
   type?: PostType;

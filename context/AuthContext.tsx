@@ -1,15 +1,15 @@
 "use client";
 import { getRoles } from "@/lib/auth";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import {
-  saveToken,
-  getToken,
-  clearToken,
-  decodeToken,
-  isTokenExpired,
-  DecodedToken,
+clearToken,
+DecodedToken,
+decodeToken,
+getToken,
+isTokenExpired,
+saveToken,
 } from "@/lib/auth";
+import { createContext,ReactNode,useContext,useEffect,useState } from "react";
 
 interface AuthContextValue {
   token: string | null;
@@ -32,10 +32,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (stored) {
       const decoded = decodeToken(stored);
       if (decoded && !isTokenExpired(decoded)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setToken(stored);
         setUser(decoded);
       } else {
         clearToken();
+        setToken(null);
+        setUser(null);
       }
     }
     setLoading(false);

@@ -1,10 +1,24 @@
 "use client";
-
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import LocalizedForm from "@/components/LocalizedForm";
+import { useI18n } from "@/context/LocaleContext";
 import { getColleges } from "@/lib/api";
-import { ApiError } from "@/lib/api";
 import { College, CreatePostInput, PostType } from "@/types";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
 interface PostFormProps {
   initialValues?: CreatePostInput;
@@ -25,19 +39,26 @@ export default function PostForm({
   onSubmit,
   submitLabel,
 }: PostFormProps) {
+  const { t, college, translateMessage, errorText } = useI18n();
+
   const router = useRouter();
   const [colleges, setColleges] = useState<College[]>([]);
   const [values, setValues] = useState<CreatePostInput>(
-    initialValues ?? emptyValues
+    initialValues ?? emptyValues,
   );
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    getColleges().then(setColleges).catch(() => setError("Failed to load colleges."));
-  }, []);
+    getColleges()
+      .then(setColleges)
+      .catch(() => setError(t("errors.colleges")));
+  }, [t]);
 
-  function update<K extends keyof CreatePostInput>(key: K, value: CreatePostInput[K]) {
+  function update<K extends keyof CreatePostInput>(
+    key: K,
+    value: CreatePostInput[K],
+  ) {
     setValues((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -46,7 +67,7 @@ export default function PostForm({
     setError(null);
 
     if (values.collegeId === 0) {
-      setError("Please select a college.");
+      setError(t("validation.college"));
       return;
     }
 
@@ -54,110 +75,157 @@ export default function PostForm({
     try {
       await onSubmit(values);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong.");
+      setError(errorText(err, "errors.generic"));
       setSubmitting(false);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-1">Type</label>
-        <div className="flex gap-3">
-          {(["Lost", "Found"] as PostType[]).map((t) => (
-            <button
-              type="button"
-              key={t}
-              onClick={() => update("type", t)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium border ${
-                values.type === t
-                  ? t === "Lost"
-                    ? "bg-red-600 text-white border-red-600"
-                    : "bg-green-600 text-white border-green-600"
-                  : "bg-white text-gray-700 border-gray-300"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
+    <Card className="rounded-2xl border shadow-sm">
+      <CardContent className="p-6 sm:p-8">
+        <div className="mb-7 border-b pb-5">
+          <p className="text-xs font-semibold uppercase tracking-widest text-teal">
+            {t("form.eyebrow")}
+          </p>
+          <h2 className="mt-2 text-xl font-semibold">{t("form.title")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {t("form.description")}
+          </p>
         </div>
-      </div>
+        <LocalizedForm onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-3">
+            <p id="item-type-label" className="text-sm font-semibold">
+              {t("report.type")}
+            </p>
+            <div
+              role="group"
+              aria-labelledby="item-type-label"
+              className="grid grid-cols-2 gap-3"
+            >
+              {(["Lost", "Found"] as PostType[]).map((itemType) => (
+                <Button
+                  type="button"
+                  key={itemType}
+                  aria-pressed={values.type === itemType}
+                  isDisabled={submitting}
+                  variant={values.type === itemType ? "default" : "outline"}
+                  onClick={() => update("type", itemType)}
+                  className={
+                    values.type === itemType
+                      ? itemType === "Lost"
+                        ? "h-16 rounded-xl border-orange bg-orange-soft text-orange hover:bg-orange-soft"
+                        : "h-16 rounded-xl border-teal bg-teal-soft text-teal hover:bg-teal-soft"
+                      : "h-16 rounded-xl"
+                  }
+                >
+                  {itemType === "Lost" ? t("form.lost") : t("form.found")}
+                </Button>
+              ))}
+            </div>
+          </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1">Title</label>
-        <input
-          required
-          maxLength={100}
-          value={values.title}
-          onChange={(e) => update("title", e.target.value)}
-          placeholder="e.g., Black wallet with student ID"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-        />
-      </div>
+          <div className="space-y-3">
+            <Label htmlFor="title">{t("form.itemTitle")}</Label>
+            <Input
+              id="title"
+              dir="auto"
+              required
+              maxLength={100}
+              value={values.title}
+              onChange={(e) => update("title", e.target.value)}
+              placeholder={t("form.titlePlaceholder")}
+              disabled={submitting}
+            />
+            <p className="text-xs text-muted-foreground">
+              {t("form.counter", { count: values.title.length, max: 100 })}
+            </p>
+          </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1">Description</label>
-        <textarea
-          required
-          maxLength={1000}
-          rows={4}
-          value={values.description}
-          onChange={(e) => update("description", e.target.value)}
-          placeholder="Describe where and when, and any identifying details..."
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-        />
-      </div>
+          <div className="space-y-3">
+            <Label htmlFor="description">{t("form.details")}</Label>
+            <Textarea
+              id="description"
+              dir="auto"
+              required
+              maxLength={1000}
+              rows={4}
+              value={values.description}
+              onChange={(e) => update("description", e.target.value)}
+              placeholder={t("form.detailsPlaceholder")}
+              disabled={submitting}
+            />
+            <p className="text-xs text-muted-foreground">
+              {t("form.counter", {
+                count: values.description.length,
+                max: 1000,
+              })}
+            </p>
+          </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1">College</label>
-        <select
-          required
-          value={values.collegeId}
-          onChange={(e) => update("collegeId", Number(e.target.value))}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-        >
-          <option value={0} disabled>
-            Select a college
-          </option>
-          {colleges.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-      </div>
+          <div className="space-y-3">
+            <Label htmlFor={"college"}>{t("form.college")}</Label>
+            <Select
+              aria-label={t("form.collegeLabel")}
+              className="w-full"
+              placeholder={t("form.selectCollege")}
+              selectedKey={values.collegeId ? String(values.collegeId) : null}
+              onSelectionChange={(key) => update("collegeId", Number(key))}
+              isDisabled={submitting}
+            >
+              <SelectTrigger id={"college"} className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {colleges.map((c) => (
+                  <SelectItem key={c.id} id={String(c.id)}>
+                    {college(c.name)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1">Contact Number</label>
-        <input
-          required
-          value={values.contactNumber}
-          onChange={(e) => update("contactNumber", e.target.value)}
-          placeholder="05XXXXXXXX"
-          pattern="^05\d{8}$"
-          title="Enter a valid Saudi mobile number (e.g., 0512345678)"
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-        />
-      </div>
+          <div className="space-y-3">
+            <Label htmlFor="contactNumber">{t("form.phone")}</Label>
+            <Input
+              id="contactNumber"
+              dir="ltr"
+              type="tel"
+              autoComplete="tel"
+              required
+              value={values.contactNumber}
+              onChange={(e) => update("contactNumber", e.target.value)}
+              placeholder={t("form.phonePlaceholder")}
+              pattern="^05\d{8}$"
+              title={t("form.phoneHint")}
+              disabled={submitting}
+            />
+            <p className="text-xs text-muted-foreground">
+              {t("form.phonePublic")}
+            </p>
+          </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && (
+            <Alert variant="destructive" role="alert">
+              <AlertDescription>{translateMessage(error)}</AlertDescription>
+            </Alert>
+          )}
 
-      <div className="flex gap-3">
-        <button
-          type="submit"
-          disabled={submitting}
-          className="bg-gray-900 text-white px-5 py-2 rounded-lg text-sm font-medium disabled:opacity-50"
-        >
-          {submitting ? "Saving..." : submitLabel}
-        </button>
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="px-5 py-2 rounded-lg text-sm font-medium border border-gray-300"
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
+          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.back()}
+              isDisabled={submitting}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button type="submit" isDisabled={submitting} className="sm:flex-1">
+              {submitting ? t("form.saving") : submitLabel}
+            </Button>
+          </div>
+        </LocalizedForm>
+      </CardContent>
+    </Card>
   );
 }
